@@ -1,0 +1,7 @@
+9 Ivanov
+10 Petrov
+11 Sidorov
+9 Grigorev
+9 Sergeev
+10 Yakovlev
+9 Pids
