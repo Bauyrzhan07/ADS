@@ -1,6 +1,7 @@
 #include<iostream>
 #include<vector>
 #include<set>
+#include<stdio.h>
 #include<algorithm>
 #include<queue>
 
@@ -189,4 +190,123 @@ void Floyd_Warshall(vector<vector<int>>d){
                 if(d[i][k]<inf&&d[k][j]<inf)
                     d[i][j] = min(d[i][j],d[i][k]+d[k][j]);
     
+}
+
+//Алгоритм Примма для случая плотных графов O(N^2)
+void Primm(vector<vector<int>>g){
+    int n = g.size();
+    vector<int>min_e(n,inf),sel_e(n,-1);
+    min_e[0] = 0;
+    for(int i=0;i<n;i++){
+        int v = -1;
+        for(int j=0;j<n;j++)
+            if(!used[j]&&(v==-1||min_e[j]<min_e[v]))
+                v = j;
+        if(min_e[v]==inf){
+            cout<<"NO MST\n";
+            break;
+        }
+        used[v] = true;
+        if(sel_e[v]!=-1)
+            cout<<v<<" "<<sel_e[v]<<'\n';
+        for(int to=0;to<n;to++){
+            if(g[v][to]<min_e[to]){
+                min_e[to] = g[v][to];
+                sel_e[to] = v;
+            }
+        } 
+    }
+}
+//Алгоритм Примма для случая разреженных графов O(MlogN)
+void Primm_set(vector<vector<pair<int,int>>>g){
+    int n = g.size();
+    vector<int>min_e(n,inf),sel_e(n,-1);
+    min_e[0] = 0;
+    set<pair<int,int>>q;//используем структуру сет для ускорения нахождения вершины с минимальным весом
+    q.insert(mp(0,0));
+    for(int i=0;i<n;i++){
+        if(q.empty()){
+            cout<<"NO MST\n";
+            break;
+        }
+        int v = q.begin()->second;
+        q.erase(q.begin());
+        if(sel_e[v]!=-1)
+            cout<<v<<" "<<sel_e[v]<<'\n';
+        for(size_t j=0;j<g[v].size();j++){
+            int to = g[v][j].first;
+            int cost = g[v][j].second;
+            if(cost<min_e[to]){
+                q.erase(mp(min_e[to],to));
+                min_e[to] = cost;
+                sel_e[to] = v;
+                q.insert(mp(min_e[to],to));
+            }
+        }
+    }
+}
+
+//Алгоритм Крускаля для нахождения минимального остового дерева за O(MlogN+N^2)
+void Kruskal(vector<pair<int,pair<int,int>>>g, int n){
+    //функция принимает вектор рёбер, первый элемент - вес, второй элемент - пара соединенных вершин
+    //также принимается значение n - количество вершин в графе
+    int m = g.size();
+    int cost = 0;
+    vector<pair<int,int>>res;//вектор пар характеризующее минимальное остовое дерево по списку его рёбер
+
+    sort(g.begin(),g.end());
+    vector<int> tree_id(n);//вектор характеризующий принадлежность каждой вершины к определнному поддереву
+    for(int i=0;i<n;i++)
+        tree_id[i] = i;
+    for(int i=0;i<m;i++){
+        int a = g[i].second.first, b = g[i].second.second, weight = g[i].first;
+        if(tree_id[a]!=tree_id[b]){//Если две вершины рассматриваемого ребра не состоят в одном и том же поддереве, мы объединяем 
+        //поддеревья к которым они относятся и добавляем данные вершины и ребро в наш МОД
+            cost += weight;
+            res.push_back(make_pair(a,b));
+            for(int j=0;j<n;j++)
+                if(tree_id[j]==tree_id[b])
+                    tree_id[j]=tree_id[a];
+        }
+    }
+}
+
+//Алгоритм Крускаля с использованием структуры DSU(disjoin set union) или же Система непересекающихся множеств
+//Сама реализация структуры DSU:
+struct DSU{
+    vector<int>p;//вектор родителей для каждой вершины графа
+    DSU(int n){
+        p.resize(n);
+        for(int i=0;i<n;i++)
+            p[i] = i;
+    }
+    int dsu_get(int v){
+        if(p[v] == v) return v;
+        return p[v] = dsu_get(v);
+    }
+    void dsu_unite(int a,int b){
+        a = dsu_get(a);
+        b = dsu_get(b);
+        if(a==b)
+            return;
+        if(rand()%2)
+            p[a] = b;
+        else
+            p[b] = a;
+    }
+};
+//Реализация самого алгоритма
+void Kruskal_DSU(vector<pair<int,pair<int,int>>> g,int n){
+    int cost = 0, m = g.size();
+    vector<pair<int,int>> res;
+    sort(g.begin(),g.end());
+    DSU* dsu = new DSU(n);
+    for(int i=0;i<m;i++){
+        int a = g[i].second.first, b = g[i].second.second, weight = g[i].first;
+        if(dsu->dsu_get(a) != dsu->dsu_get(b)){
+            cost += weight;
+            res.push_back(g[i].second);
+            dsu->dsu_unite(a,b);
+        }
+    }
 }
